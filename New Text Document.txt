@@ -1,0 +1,75 @@
+# provider
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "=3.0.0"
+    }
+  }
+}
+
+# Configure the Microsoft Azure Provider
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_resource_group" "example" {
+  name     = "example-resources"
+  location = "West Europe"
+}
+
+# Create a virtual network within the resource group
+resource "azurerm_virtual_network" "example" {
+  name                = "example-network"
+  resource_group_name = azurerm_resource_group.example.name
+  location            = azurerm_resource_group.example.location
+  address_space       = ["10.0.0.0/16"]
+}
+
+# Create a subnetwork within the resource group
+resource "azurerm_subnet" "example" {
+  name                 = "example-subnet"
+  resource_group_name  = azurerm_resource_group.example.name
+  virtual_network_name = azurerm_virtual_network.example.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
+# Create a Network Security Group
+resource "azurerm_network_security_group" "example" {
+  name                = "acceptanceTestSecurityGroup1"
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+}
+
+# Create a Network Security rules
+resource "azurerm_network_security_rule" "example" {
+  name                        = "test123"
+  priority                    = 100
+  direction                   = "Outbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "*"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = azurerm_resource_group.example.name
+  network_security_group_name = azurerm_network_security_group.example.name
+}
+
+# Create a azurerm service plan
+resource "azurerm_service_plan" "example" {
+  name                = "example"
+  resource_group_name = azurerm_resource_group.example.name
+  location            = azurerm_resource_group.example.location
+  sku_name            = "P1v2"
+  os_type             = "Windows"
+}
+# Create a azurerm web apps
+resource "azurerm_windows_web_app" "example" {
+  name                = "example"
+  resource_group_name = azurerm_resource_group.example.name
+  location            = azurerm_service_plan.example.location
+  service_plan_id     = azurerm_service_plan.example.id
+
+  site_config {}
+}
